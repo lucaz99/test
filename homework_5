@@ -1,0 +1,29 @@
+------ 5. 18세 이상, 당뇨 진단 환자, metformin 90일 이상 복용, 당뇨 진단 후에 복용 (환자별 최초 진단, 최초 복용일 기준)
+
+-- 제 2형 당뇨 진단 받은 환자 정보 및 진단일(condition_start_date), 생년월일
+select a.*, b.drug_start_date
+        ,EXTRACT(year from age(birth_datetime::date)) as current_age                          --현재 나이(현시점 기준 나이)
+	    ,EXTRACT(year from age(condition_start_date::date, birth_datetime::date)) as age_diff   --진단 시점 나이(당뇨 첫 진단시 기준 나이)
+from (select CO.person_id,
+             CO.condition_start_date,
+             p.birth_datetime
+      from condition_occurrence CO
+               left join person p on CO.person_id = p.person_id
+      where CO.condition_concept_id in (3191208,36684827,3194332,3193274,43531010,4130162,45766052,
+                               45757474,4099651,4129519,4063043,4230254,4193704,4304377,
+                               201826,3194082,3192767)
+      ) a
+      
+-- metformin 90일 이상 복용 환자군 및 첫 복용 시작일 
+right join (select person_id, min(drug_exposure_start_date) as drug_start_date                -- 환자 별 첫 복용 시작일( min(drug_exposure_start_date) )
+           from (select person_id,
+                        drug_exposure_start_date,
+                        drug_exposure_end_date,
+                        (drug_exposure_end_date - drug_exposure_start_date + 1) as drug_date  --- 복용일이 하루 미만일 경우 : 종요일 - 시작일 +1
+                 from drug_exposure
+                 where drug_concept_id = 40163924
+                   and (drug_exposure_end_date - drug_exposure_start_date + 1) >= 90) a       --- (종요일 - 시작일 +1) 값이 90일 이상인 경우 조건 추가
+           group by person_id) b
+on a.person_id = b.person_id
+where condition_start_date <= drug_start_date
+and EXTRACT(year from age(condition_start_date::date, birth_datetime::date)) >= 18            --- rigth join 후 18세 이상일 경우 조건 추가
