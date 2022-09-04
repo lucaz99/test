@@ -1,0 +1,7 @@
+--- 최대 내원일 수 및 환자 번호
+select person_id, sum(v_d_date) as max_total_date
+from (select person_id, visit_start_date, visit_end_date, (visit_end_date - visit_start_date + 1) as v_d_date
+      from de.visit_occurrence
+     ) a
+group by a.person_id
+order by max_total_date desc;
