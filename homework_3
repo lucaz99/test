@@ -1,13 +1,15 @@
 ------ 3. 환자 1891866 약종류별, 복용일(처음, 마지막, 전체 복용일) 및 복용일 순으로 정렬
 select a.person_id,a.start_date, a.end_date, a.drug_concept_id, c.concept_name,  a.drug_date
 from (
-select person_id,drug_concept_id, min(drug_exposure_start_date) as start_date, max(drug_exposure_end_date) as end_date,  
-       sum((drug_exposure_end_date - drug_exposure_start_date  + 1)) as drug_date
+select person_id,drug_concept_id, 
+       min(drug_exposure_start_date) as start_date,                                     ---- 환자의 첫 복용일
+       max(drug_exposure_end_date) as end_date,                                         ---- 환자의 마지막 복용일
+       sum((drug_exposure_end_date - drug_exposure_start_date  + 1)) as drug_date       ---- 환자의 약물 별 전체 복용 기간   
 from drug_exposure
-where person_id = 1891866
+where person_id = 1891866                                                               ---- 환자 번호에 해당하는 정보 추출
 group by person_id, drug_concept_id
 ) a
 left join concept c
 on
-    a.drug_concept_id = c.concept_id
+  a.drug_concept_id = c.concept_id
 order by drug_date desc;
