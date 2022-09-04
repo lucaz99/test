@@ -1,0 +1,89 @@
+# install.packages('RPostgreSQL') # Postresql 연결을 위한 패키지 설치
+
+# DB 접속 정보 할당 
+dsn_database = "synthea_1000"   # 접속 DB Schema 정보
+dsn_hostname = "49.50.167.136"  # 접속 host 정보
+dsn_port = "5432"               # 접속 port 정보
+dsn_uid = "your_ID"             # DB 접속 ID / 과제 수행자 제공 ID
+dsn_pwd = "your_PW"             # DB 접속 PW / 과제 수행자 제공 PW
+
+library(RPostgreSQL)            # 패키지 load
+
+# 접속 환경 체크
+tryCatch({
+  drv <- dbDriver("PostgreSQL")
+  print("Connecting to Database…")
+  connec <- dbConnect(drv, 
+                      dbname = dsn_database,
+                      host = dsn_hostname, 
+                      port = dsn_port,
+                      user = dsn_uid, 
+                      password = dsn_pwd)
+  print("Database Connected!")
+},
+error=function(cond) {
+  print("Unable to connect to Database.")
+})
+
+# read Drug_fair table 
+drug_fair<- dbGetQuery(connec, "select * From de.drug_pair")
+
+# concept_id1과 drug_fair 조인 테이블 drugs 할당
+drugs <- dbGetQuery(connec, "with drug_list as (
+select distinct drug_concept_id, concept_name, count(*) as cnt from
+drug_exposure de
+join concept
+on drug_concept_id = concept_id
+where concept_id in (
+40213154,19078106,19009384,40224172,19127663,1511248,40169216,1539463,
+19126352,1539411,1332419,40163924,19030765,19106768,19075601)
+group by drug_concept_id,concept_name
+order by count(*) desc
+)
+select dl.drug_concept_id as id1,dl.concept_name as nm1, dl.cnt as cp1
+      from drug_list dl
+right join (
+    select drug_concept_id1
+        from drug_pair) dr
+on dl.drug_concept_id = dr.drug_concept_id1
+right join (select
+                drug_concept_id1, drug_concept_id2
+            from drug_pair) drr
+on dl.drug_concept_id = drr.drug_concept_id1
+;")
+
+# concept_id2과 drug_fair 조인 테이블 drugs2 할당
+drugs2 <- dbGetQuery(connec, "with drug_list_2 as (
+select distinct drug_concept_id, concept_name, count(*) as cnt from
+drug_exposure de
+join concept
+on drug_concept_id = concept_id
+where concept_id in (
+40213154,19078106,19009384,40224172,19127663,1511248,40169216,1539463,
+19126352,1539411,1332419,40163924,19030765,19106768,19075601)
+group by drug_concept_id,concept_name
+order by count(*) desc
+)
+select dl.drug_concept_id as id2 ,dl.concept_name as nm2, dl.cnt as cp2
+from drug_list_2 dl
+right join (
+    select drug_concept_id2
+        from drug_pair) dr
+on dl.drug_concept_id = dr.drug_concept_id2;")
+
+# 데이터 할당된 두 테이블의 bind를 위한 패키지 load
+library(tidyverse)
+
+# 두 테이블 bind 후 bind_drugs로 할당
+bind_drugs<-cbind(drugs, drugs2) 
+View(bind_drugs)        # table 확인
+str(bind_drugs)         # table 속성 확인
+
+# concept_id2(두번째 처방 약)의 건 수(cp2)와 concept_id1(첫번째 처방 약)의 건 수(cp1)의 차(-) 확인
+first_drug_cnt<-
+  bind_drugs %>% 
+  mutate(CP = cp2 - cp1) %>%   # 새로운 열값(CP) :  두번째 약의 처방 건수와 첫번째 처방 약의 건수 차
+  select(nm1,CP) %>%           # 차이 값이 양수(두번째 처방양의 건수가 더 많은 경우)인 Row의 첫번째 처방약과 처방 건수
+  arrange(desc(CP))            # 내림차순 정리
+
+View(first_drug_cnt)           # 결과 테이블 확인
