@@ -1,8 +1,12 @@
+
+------2. 상병 이름 찾기 (a,b,c,d,e)로 시작 , heart 포함
 select concept_id, concept_name
 from
     ( select concept_id, concept_name
-      from concept where concept_name like '%heart%'
-                     --and invalid_reason not in ('u','s')
-                   )v
-where substring(concept_name,1,1) between 'a' and 'e'
-and concept_id in (select distinct condition_concept_id from condition_occurrence);
+      from concept where concept_name like '%heart%'                 --- 상병 명에 heart 포함하는 concept_id와 concept_name 추출
+    ) aa
+where substring(concept_name,1,1) between 'a' and 'e'                --- 상병명 제일 첫글자의 substring 값이 a 에서 e 사이 인 값들만 추출
+and concept_id in (                                                  --- condition_occurrence에 있는 상병 코드만 추출
+                    select distinct condition_concept_id 
+                    from condition_occurrence
+                    );
