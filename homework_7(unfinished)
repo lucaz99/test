@@ -1,0 +1,20 @@
+-- 각 테이블명에 field 값에 해당하는 속성의 문자열을 검색하고 다음 테이블의 field값 이전까지 문자열 전체를 스크래핑
+-- CONTINUING 또는  '------------' 단위로 스크래핑 작업 절단
+
+-- person table의 경우 
+-- marital Status 줄의 마지막 /n 값까지 스크래핑 하고 각 field 값별로 변수 할당 및 스크래핑 데이터를 입력
+-- 할당 된 변수를 Table에 insert 및 insert명령 실행시 n + 1 만큼 person id 부여
+
+-- visit occurrence의 경우
+-- ENCOUNTER 부터 읽어 들여서 MEDICATIONS 직전까지 스크래핑 
+-- person table 의 field 값 처리 처럼 변수에 값 할당 후 테이블에 부여
+-- id값은 n+1로 부여
+
+-- drug_exposure의 경우
+-- MEDICATIONS 부터 CONDITIONS 앞까지 스크래핑
+-- field 값 처리 처럼 변수에 값 할당 후 테이블에 부여
+-- 여러 줄로 구성 되어 있을 경우 첫번째 변수 데이터 할당 후 /n 다음 숫자값 check = 1 일 경우, 변수 초기화 및 값 재할당
+-- person id는 clinical_note 1 row 당 전체 처리가 한번씩 발생하기에 앞서 할당한 person_id 변수값 적용
+-- 성분은  1. 숫자로 첫 문장 시작시 단위 구분 전까지 파싱. 
+-- 용량은 '/' 특수문자 앞까지 추출 후 숫자만 남기고 문자열 삭제
+-- 단위는 '/' 특수문자 앞뒤 3자리 파싱
