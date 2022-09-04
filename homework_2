@@ -1,0 +1,8 @@
+select concept_id, concept_name
+from
+    ( select concept_id, concept_name
+      from concept where concept_name like '%heart%'
+                     --and invalid_reason not in ('u','s')
+                   )v
+where substring(concept_name,1,1) between 'a' and 'e'
+and concept_id in (select distinct condition_concept_id from condition_occurrence);
